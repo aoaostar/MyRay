@@ -39,7 +39,6 @@ jobs:
 
       - name: Run script
         run: |
-          chmod 777 ./main.py
           python main.py
           ls ./cache
           echo "###"
