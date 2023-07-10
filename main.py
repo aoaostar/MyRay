@@ -43,7 +43,8 @@ async def main():
         data[r["clazz"]] = r
 
     merge_path = f'./cache/merge/{os.path.basename(data[ClashForWindowsPkg]["extract_path"])}'
-    shutil.rmtree(merge_path)
+    if os.path.exists(merge_path):
+        shutil.rmtree(merge_path)
     shutil.copytree(data[ClashForWindowsPkg]["extract_path"], merge_path)
     shutil.copy(data[ClashChinesePatch]["extract_path"] + "/app.asar", f"{merge_path}/resources/app.asar")
     shutil.copy(data[ClashMeta]["extract_path"] + "/clash.meta-windows-amd64.exe",
