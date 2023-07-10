@@ -34,7 +34,7 @@ class Base:
     async def download(cls, url: str, filename: str):
         save_path = f"{cls.cache}/{filename}"
         if not os.path.exists(os.path.dirname(save_path)):
-            os.makedirs(os.path.dirname(save_path), 777)
+            os.makedirs(os.path.dirname(save_path))
 
         async with async_client() as client:
             async with client.stream("GET", cls.proxy + url, follow_redirects=True) as response:
