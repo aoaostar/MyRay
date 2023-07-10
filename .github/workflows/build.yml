@@ -1,0 +1,80 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest ]
+        python-version: [ 3.9 ]
+    name: Build
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install p7zip-full
+          \cp -f /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run script
+        run: |
+          python main.py
+          ls ./cache
+          echo "###"
+          ls ./cache/merge
+
+      - name: Get Version
+        id: get_version
+        run: |
+          filename=$(ls ./cache/merge/ | grep ".zip$" | xargs -I{} basename {})
+          echo "::set-output name=VERSION_FILE::$filename"
+
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+          draft: false
+          prerelease: false
+
+      - name: Upload File
+        id: upload-release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cache/merge/${{ steps.get_version.outputs.VERSION_FILE }}
+          asset_name: ${{ steps.get_version.outputs.VERSION_FILE }}
+          asset_content_type: application/zip

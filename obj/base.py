@@ -1,4 +1,5 @@
 import os.path
+import subprocess
 from abc import abstractmethod
 
 import httpx
@@ -7,14 +8,20 @@ from logger import logger
 from util import calculate_execution_time
 
 
+def async_client():
+    return httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(retries=3))
+
+
 class Base:
     cache = "./cache"
+    # proxy = "https://ghproxy.com/"
+    proxy = ""
 
     @classmethod
     @calculate_execution_time
     async def get_latest_release(cls, repo: str):
         url = f"https://api.github.com/repos/{repo}/releases/latest"
-        async with httpx.AsyncClient() as client:
+        async with async_client() as client:
             response = await client.get(url)
             response_json = response.json()
             if "message" in response_json:
@@ -29,8 +36,8 @@ class Base:
         if not os.path.exists(os.path.dirname(save_path)):
             os.makedirs(os.path.dirname(save_path), 777)
 
-        async with httpx.AsyncClient() as client:
-            async with client.stream("GET", "https://ghproxy.com/" + url, follow_redirects=True) as response:
+        async with async_client() as client:
+            async with client.stream("GET", cls.proxy + url, follow_redirects=True) as response:
                 with open(save_path, "wb") as f:
                     async for chunk in response.aiter_bytes():
                         f.write(chunk)
@@ -41,21 +48,9 @@ class Base:
     @calculate_execution_time
     def extract(cls, archive_path: str, extract_path: str):
         extract_path = f"{cls.cache}/{extract_path}"
-        logger.info(f"[{cls.__name__}][extract] archive_path={archive_path} extract_path={extract_path}")
-        if not os.path.isdir(extract_path):
-            os.makedirs(extract_path, 777)
-        if "zip" in os.path.splitext(archive_path)[1]:
-            import shutil
-            shutil.unpack_archive(archive_path, extract_path)
-        elif "7z" in os.path.splitext(archive_path)[1]:
-            # import py7zr
-            # with py7zr.SevenZipFile(archive_path, mode="r") as z:
-            #     z.extractall(path=extract_path)
-            from pyunpack import Archive
-
-            Archive(archive_path).extractall(extract_path)
+        subprocess.run(f'''7z x "{archive_path}" -o"{extract_path}" -bsp1 -bso0''')
+        return extract_path
 
     @abstractmethod
-    @calculate_execution_time
     async def get_download_url(self) -> tuple[str, str]:
         pass

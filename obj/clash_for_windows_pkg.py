@@ -14,3 +14,6 @@ class ClashForWindowsPkg(Base, ABC):
         for asset in release["assets"]:
             if re.match(r"^Clash\.for\.Windows-\d+\.\d+\.\d+-win\.7z$", asset["name"]):
                 return asset["name"], asset["browser_download_url"]
+
+    def aaa(self):
+        pass
