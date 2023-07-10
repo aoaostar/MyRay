@@ -36,7 +36,7 @@ class Base:
         if not os.path.exists(os.path.dirname(save_path)):
             os.makedirs(os.path.dirname(save_path))
 
-        logger.info("save_path", save_path)
+        logger.info("save_path " + save_path)
 
         async with async_client() as client:
             async with client.stream("GET", cls.proxy + url, follow_redirects=True) as response:
