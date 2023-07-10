@@ -50,6 +50,8 @@ class Base:
     @calculate_execution_time
     def extract(cls, archive_path: str, extract_path: str):
         extract_path = f"{cls.cache}/{extract_path}"
+        if not os.path.exists(extract_path):
+            os.makedirs(extract_path)
         subprocess.run(f'''7z x "{archive_path}" -o"{extract_path}" -bsp1 -bso0''')
         return extract_path
 
