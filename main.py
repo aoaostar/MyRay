@@ -16,8 +16,6 @@ async def task(clazz: (Base, ABC)):
 
     filename, download_url = await clazz.get_download_url()
     save_path = await clazz.download(download_url, filename)
-    logger.info("listdir")
-    logger.info(os.listdir(f"./cache/"))
     extract_path = clazz.extract(save_path, os.path.splitext(filename)[0])
     return {
         "clazz": clazz,
