@@ -39,7 +39,7 @@ jobs:
 
       - name: Run script
         run: |
-          sudo python main.py
+          python main.py
           ls ./cache
           echo "###"
           ls ./cache/merge
