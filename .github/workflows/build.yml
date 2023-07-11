@@ -58,6 +58,7 @@ jobs:
 
       - name: Create Tag
         uses: negz/create-tag@v1
+        permissions: read-all|write-all
         with:
           version: ${{steps.github_release.outputs.TAG_NAME }}
           message: ${{steps.github_release.outputs.TAG_NAME }}
