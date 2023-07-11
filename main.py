@@ -30,7 +30,8 @@ async def main():
         os.makedirs("./cache")
     pkg_latest_release = await Base.get_latest_release("Fndroid/clash_for_windows_pkg")
     my_ray_latest_release = await Base.get_latest_release("aoaostar/MyRay")
-    if "tag_name" in my_ray_latest_release and pkg_latest_release["tag_name"] == my_ray_latest_release["tag_name"]:
+    if "tag_name" in my_ray_latest_release and pkg_latest_release["tag_name"] == \
+            my_ray_latest_release["name"].removesuffix("Release V"):
         logger.info(
             f'当前已是最新版本, 当前版本: {my_ray_latest_release["tag_name"]} 最新版本: {pkg_latest_release["tag_name"]}')
         return

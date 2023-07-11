@@ -52,8 +52,10 @@ jobs:
         run: |
           curl -s "https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest" > response.json
           body=$(jq -r '.body' response.json)
+          tag_name=$(jq -r '.tag_name' response.json)
           echo "::set-output name=CHANGE_LOG::$body"
-          
+          echo "::set-output name=TAG_NAME::$tag_name"
+
 
       - name: Create Release
         id: create_release
@@ -61,9 +63,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: ${{steps.github_release.outputs.CHANGE_LOG}}
+          tag_name: ${{ github.sha }}
+          release_name: Release V${{steps.github_release.outputs.TAG_NAME }}
+          body: ${{ steps.github_release.outputs.CHANGE_LOG }}
           draft: false
           prerelease: false
 
