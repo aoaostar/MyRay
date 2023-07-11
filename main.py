@@ -8,6 +8,7 @@ from obj.base import Base
 from obj.clash_chinese_patch import ClashChinesePatch
 from obj.clash_for_windows_pkg import ClashForWindowsPkg
 from obj.clash_meta import ClashMeta
+from obj.clash_meta_for_android import ClashMetaForAndroid
 
 
 async def task(clazz: (Base, ABC)):
@@ -39,19 +40,23 @@ async def main():
         task(ClashChinesePatch),
         task(ClashForWindowsPkg),
         task(ClashMeta),
+        task(ClashMetaForAndroid),
     )
     data = {}
     for r in result:
         data[r["clazz"]] = r
 
-    merge_path = f'./cache/merge/{os.path.basename(data[ClashForWindowsPkg]["extract_path"])}'
+    merge_path = f'./cache/merge/'
+    clash_for_windows_pkg_merge_path = f'{merge_path}{os.path.basename(data[ClashForWindowsPkg]["extract_path"])}'
     if os.path.exists(merge_path):
         shutil.rmtree(merge_path)
-    shutil.copytree(data[ClashForWindowsPkg]["extract_path"], merge_path)
-    shutil.copy(data[ClashChinesePatch]["extract_path"] + "/app.asar", f"{merge_path}/resources/app.asar")
+    shutil.copytree(data[ClashForWindowsPkg]["extract_path"],clash_for_windows_pkg_merge_path)
+    shutil.copy(data[ClashChinesePatch]["extract_path"] + "/app.asar", f"{clash_for_windows_pkg_merge_path}/resources/app.asar")
     shutil.copy(data[ClashMeta]["extract_path"] + "/clash.meta-windows-amd64.exe",
-                f"{merge_path}/resources/static/files/win/x64/clash-win64.exe")
-    shutil.make_archive(f"{merge_path}", "zip", merge_path)
+                f"{clash_for_windows_pkg_merge_path}/resources/static/files/win/x64/clash-win64.exe")
+    shutil.copy(data[ClashMetaForAndroid]["extract_path"],
+                f'{merge_path}{os.path.basename(data[ClashMetaForAndroid]["extract_path"])}')
+    shutil.make_archive(f"{clash_for_windows_pkg_merge_path}", "zip", clash_for_windows_pkg_merge_path)
 
 
 if __name__ == '__main__':
