@@ -13,6 +13,7 @@ jobs:
         python-version: [ 3.9 ]
     name: Build
     runs-on: ${{ matrix.platform }}
+    permissions: write-all
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -22,7 +23,7 @@ jobs:
       - name: Get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install p7zip-full
+          sudo apt-get install -y p7zip-full jq
           \cp -f /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
       - name: Set up Python
@@ -32,37 +33,67 @@ jobs:
 
       - name: Install dependencies
         run: |
-          git fetch origin main:main
-          git checkout release
-          git checkout main ./
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run script
         run: |
           python main.py
-          sudo cat >.gitignore<<EOF
-          *
-          !.github
-          !.github/**
-          !.gitlab
-          !.gitlab/**
-          !cache
-          !cache/**
-          !CNAME
-          !index.html
-          !README.md
-          !data.json
-          !LISENCE
-          !.gitignore
-          EOF
-
-      - name: Commit files
+      - name: Get latest tag
+        id: latest_tag
         run: |
-          sudo git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          sudo git config --local user.name "github-actions[bot]"
-          sudo git rm --cached --ignore-unmatch -r -f *
-          sudo git add .
-          sudo git commit -m "Add sync changes"
-          sudo git checkout release
-          sudo git push -f origin release
+          filename=$(ls ./cache/merge/ | grep ".zip$" | xargs -I{} basename {})
+          echo "::set-output name=VERSION_FILE::$filename"
+          latest_tag=$(git describe --abbrev=0 --tags)
+          echo "::set-output name=LATEST_TAG::$latest_tag"
+
+      - name: Get latest release tag
+        id: latest_release
+        run: |
+          curl -s "https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest" > response.json
+          tag_name=$(jq -r '.tag_name' response.json)
+          echo "::set-output name=LATEST_RELEASE_TAG::$tag_name"
+
+      - name: Check if latest tag matches latest release
+        run: |
+          if [[ "${{ steps.latest_tag.outputs.LATEST_TAG }}" == "${{ steps.latest_release.outputs.LATEST_RELEASE_TAG }}" ]]; then
+            echo "Latest tag matches latest release"
+            exit 0
+          fi
+
+      - name: Build Changelog
+        id: github_release
+        run: |
+          body=$(jq -r '.body' response.json)
+          echo "::set-output name=CHANGE_LOG::$body"
+
+      - name: Create Tag
+        uses: negz/create-tag@v1
+        with:
+          version: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          message: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          continue-on-error: true
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          release_name: Release V${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          body: ${{ steps.github_release.outputs.CHANGE_LOG }}
+          draft: false
+          prerelease: false
+
+      - name: Upload File
+        id: upload-release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cache/merge/${{ steps.get_version.outputs.VERSION_FILE }}
+          asset_name: ${{ steps.get_version.outputs.VERSION_FILE }}
+          asset_content_type: application/zip

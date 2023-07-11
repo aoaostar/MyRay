@@ -41,28 +41,41 @@ jobs:
       - name: Run script
         run: |
           python main.py
-
-      - name: Get Version
-        id: get_version
+      - name: Get latest tag
+        id: latest_tag
         run: |
           filename=$(ls ./cache/merge/ | grep ".zip$" | xargs -I{} basename {})
           echo "::set-output name=VERSION_FILE::$filename"
+          latest_tag=$(git describe --abbrev=0 --tags)
+          echo "::set-output name=LATEST_TAG::$latest_tag"
+
+      - name: Get latest release tag
+        id: latest_release
+        run: |
+          curl -s "https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest" > response.json
+          tag_name=$(jq -r '.tag_name' response.json)
+          echo "::set-output name=LATEST_RELEASE_TAG::$tag_name"
+
+      - name: Check if latest tag matches latest release
+        run: |
+          if [[ "${{ steps.latest_tag.outputs.LATEST_TAG }}" == "${{ steps.latest_release.outputs.LATEST_RELEASE_TAG }}" ]]; then
+            echo "Latest tag matches latest release"
+            exit 0
+          fi
 
       - name: Build Changelog
         id: github_release
         run: |
-          curl -s "https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest" > response.json
           body=$(jq -r '.body' response.json)
-          tag_name=$(jq -r '.tag_name' response.json)
           echo "::set-output name=CHANGE_LOG::$body"
-          echo "::set-output name=TAG_NAME::$tag_name"
 
       - name: Create Tag
         uses: negz/create-tag@v1
         with:
-          version: ${{steps.github_release.outputs.TAG_NAME }}
-          message: ${{steps.github_release.outputs.TAG_NAME }}
+          version: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          message: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          continue-on-error: true
 
       - name: Create Release
         id: create_release
@@ -70,8 +83,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{steps.github_release.outputs.TAG_NAME }}
-          release_name: Release V${{steps.github_release.outputs.TAG_NAME }}
+          tag_name: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
+          release_name: Release V${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
           body: ${{ steps.github_release.outputs.CHANGE_LOG }}
           draft: false
           prerelease: false
