@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions: read-all|write-all
+
 jobs:
 
   build:
@@ -15,7 +17,6 @@ jobs:
         python-version: [ 3.9 ]
     name: Build
     runs-on: ${{ matrix.platform }}
-    permissions: read-all|write-all
     steps:
       - name: Check out code
         uses: actions/checkout@v3
