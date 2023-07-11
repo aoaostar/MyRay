@@ -51,7 +51,7 @@ async def main():
     shutil.copy(data[ClashChinesePatch]["extract_path"] + "/app.asar", f"{merge_path}/resources/app.asar")
     shutil.copy(data[ClashMeta]["extract_path"] + "/clash.meta-windows-amd64.exe",
                 f"{merge_path}/resources/static/files/win/x64/clash-win64.exe")
-    shutil.make_archive(f"{merge_path}.zip", "zip", merge_path)
+    shutil.make_archive(f"{merge_path}", "zip", merge_path)
 
 
 if __name__ == '__main__':
