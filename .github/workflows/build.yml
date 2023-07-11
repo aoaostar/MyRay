@@ -24,7 +24,7 @@ jobs:
       - name: Get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install p7zip-full
+          sudo apt-get install -y p7zip-full jq
           \cp -f /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
       - name: Set up Python
@@ -46,12 +46,14 @@ jobs:
         run: |
           filename=$(ls ./cache/merge/ | grep ".zip$" | xargs -I{} basename {})
           echo "::set-output name=VERSION_FILE::$filename"
-#
-#      - name: Build Changelog
-#        id: github_release
-#        uses: mikepenz/release-changelog-builder-action@main
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Changelog
+        id: github_release
+        run: |
+          curl -s "https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest" > response.json
+          body=$(jq -r '.body' response.json)
+          echo "::set-output name=CHANGE_LOG::$body"
+          
 
       - name: Create Release
         id: create_release
@@ -61,7 +63,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-#          body: ${{steps.github_release.outputs.changelog}}
+          body: ${{steps.github_release.outputs.CHANGE_LOG}}
           draft: false
           prerelease: false
 
