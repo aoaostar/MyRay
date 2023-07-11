@@ -15,6 +15,7 @@ jobs:
         python-version: [ 3.9 ]
     name: Build
     runs-on: ${{ matrix.platform }}
+    permissions: read-all|write-all
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -58,7 +59,6 @@ jobs:
 
       - name: Create Tag
         uses: negz/create-tag@v1
-        permissions: read-all|write-all
         with:
           version: ${{steps.github_release.outputs.TAG_NAME }}
           message: ${{steps.github_release.outputs.TAG_NAME }}
