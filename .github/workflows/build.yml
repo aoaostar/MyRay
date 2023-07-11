@@ -66,8 +66,8 @@ jobs:
       - name: Build Changelog
         id: github_release
         run: |
-          body=$(jq -r '.body' response.json)
-          echo "::set-output name=CHANGE_LOG::$body"
+          echo $(jq -r '.body' response.json) >> release_body
+          echo "::set-output name=CHANGE_LOG::release_body"
 
       - name: Create Tag
         uses: negz/create-tag@v1
@@ -85,7 +85,7 @@ jobs:
         with:
           tag_name: ${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
           release_name: Release V${{steps.latest_release.outputs.LATEST_RELEASE_TAG }}
-          body: ${{ steps.github_release.outputs.CHANGE_LOG }}
+          body_path: ${{ steps.github_release.outputs.CHANGE_LOG }}
           draft: false
           prerelease: false
 
@@ -96,6 +96,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./cache/merge/${{ steps.get_version.outputs.VERSION_FILE }}
-          asset_name: ${{ steps.get_version.outputs.VERSION_FILE }}
+          asset_path: ./cache/merge/${{ steps.latest_tag.outputs.VERSION_FILE }}
+          asset_name: ${{ steps.latest_tag.outputs.VERSION_FILE }}
           asset_content_type: application/zip
