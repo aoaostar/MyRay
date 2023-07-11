@@ -3,6 +3,7 @@ name: release
 on:
   schedule:
     - cron: '0 0 * * *'
+
 jobs:
   build:
     strategy:
@@ -55,15 +56,10 @@ jobs:
           tag_name=$(jq -r '.tag_name' response.json)
           echo "::set-output name=LATEST_RELEASE_TAG::$tag_name"
 
-      - name: Check if latest tag matches latest release
-        run: |
-          if [[ "${{ steps.latest_tag.outputs.LATEST_TAG }}" == "${{ steps.latest_release.outputs.LATEST_RELEASE_TAG }}" ]]; then
-            echo "Latest tag matches latest release"
-            exit 0
-          fi
 
       - name: Build Changelog
         id: github_release
+        if: ${{ steps.latest_tag.outputs.LATEST_TAG == steps.latest_release.outputs.LATEST_RELEASE_TAG }}
         run: |
           echo $(jq -r '.body' response.json) >> release_body
           echo "::set-output name=CHANGE_LOG::release_body"
@@ -78,6 +74,7 @@ jobs:
 
       - name: Create Release
         id: create_release
+        if: ${{ steps.latest_tag.outputs.LATEST_TAG == steps.latest_release.outputs.LATEST_RELEASE_TAG }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -89,6 +86,7 @@ jobs:
           prerelease: false
 
       - name: Upload ClasMetaForWindows File
+        if: ${{ steps.latest_tag.outputs.LATEST_TAG == steps.latest_release.outputs.LATEST_RELEASE_TAG }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,6 +97,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload ClashMetaForAndroid File
+        if: ${{ steps.latest_tag.outputs.LATEST_TAG == steps.latest_release.outputs.LATEST_RELEASE_TAG }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
