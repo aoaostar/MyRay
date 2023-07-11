@@ -47,13 +47,6 @@ jobs:
           filename=$(ls ./cache/merge/ | grep ".zip$" | xargs -I{} basename {})
           echo "::set-output name=VERSION_FILE::$filename"
 
-      - name: Create Tag
-        uses: negz/create-tag@v1
-        with:
-          version: ${{steps.github_release.outputs.TAG_NAME }}
-          message: ${{steps.github_release.outputs.TAG_NAME }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Changelog
         id: github_release
         run: |
@@ -63,6 +56,12 @@ jobs:
           echo "::set-output name=CHANGE_LOG::$body"
           echo "::set-output name=TAG_NAME::$tag_name"
 
+      - name: Create Tag
+        uses: negz/create-tag@v1
+        with:
+          version: ${{steps.github_release.outputs.TAG_NAME }}
+          message: ${{steps.github_release.outputs.TAG_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         id: create_release
